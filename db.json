@@ -1,0 +1,76 @@
+{
+  "tasks": [
+    {
+      "id": "193829c6-b91d-402d-82d6-127a546e3514",
+      "title": "teste 2",
+      "description": "",
+      "priority": "medium",
+      "category": "personal",
+      "estimated_duration": 60,
+      "deadline": "2025-07-25T09:00:00.000Z",
+      "status": "completed",
+      "completed_at": "2025-07-24T16:32:10.714953"
+    },
+    {
+      "id": "c9f62cbf-59df-4319-a927-fbccaf0a7fb8",
+      "title": "hwjwjeje",
+      "description": "hejejejeej",
+      "priority": "medium",
+      "category": "work",
+      "estimated_duration": 60,
+      "deadline": "2025-07-25T09:00:00.000",
+      "status": "completed",
+      "completed_at": "2025-07-24T19:26:28.650648"
+    },
+    {
+      "id": "519a860c-2afe-44d7-9edc-904b4be77dfb",
+      "title": "uejejeje",
+      "description": "jejejekejeje",
+      "priority": "high",
+      "category": "work",
+      "estimated_duration": 60,
+      "deadline": "2025-07-25T09:00:00.000Z",
+      "status": "completed",
+      "completed_at": "2025-07-24T19:37:30.309336"
+    }
+  ],
+  "suggestions": [
+    {
+      "task_id": "generic-suggestion-1",
+      "suggested_times": [
+        {
+          "start": "2025-07-25T09:00:00Z",
+          "end": "2025-07-25T10:00:00Z",
+          "score": 0.9
+        },
+        {
+          "start": "2025-07-25T14:00:00Z",
+          "end": "2025-07-25T15:00:00Z",
+          "score": 0.8
+        },
+        {
+          "start": "2025-07-26T10:00:00Z",
+          "end": "2025-07-26T11:30:00Z",
+          "score": 0.85
+        }
+      ],
+      "id": "generic-suggestions"
+    },
+    {
+      "task_id": "morning-suggestions",
+      "suggested_times": [
+        {
+          "start": "2025-07-27T08:00:00Z",
+          "end": "2025-07-27T09:00:00Z",
+          "score": 0.95
+        },
+        {
+          "start": "2025-07-28T08:30:00Z",
+          "end": "2025-07-28T10:00:00Z",
+          "score": 0.9
+        }
+      ],
+      "id": "morning-times"
+    }
+  ]
+}
