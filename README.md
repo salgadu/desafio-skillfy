@@ -36,7 +36,7 @@ A tela `TaskFormScreen` possui:
 
 ### 4\. **Integração com a API de Produtividade**
 
-  * Consumo dos endpoints `/tasks` e `/suggest-time` via `ApiService`.
+  * Consumo dos endpoints `/tasks` e `/suggest-time`.
   * Simulação da API local usando `json-server` com o arquivo `db.json`.
   * Comunicação realizada com `http`, utilizando **Dio** como client.
 
