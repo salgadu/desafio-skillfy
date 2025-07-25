@@ -6,140 +6,133 @@ import 'package:desafio_skillfy/app/module/task_management/models/user_preferenc
 import 'package:desafio_skillfy/app/module/task_management/repository/i_suggestions_time.dart';
 import 'package:desafio_skillfy/app/module/task_management/repository/i_task_management.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'task_controller_test.mocks.dart';
 
-class MockTaskManagement extends Mock implements ITaskManagement {}
-
-class MockSuggestionsTime extends Mock implements ISuggestionsTime {}
-
+@GenerateMocks([ITaskManagement, ISuggestionsTime])
 void main() {
   late TaskController controller;
-  late MockTaskManagement mockTaskManagement;
-  late MockSuggestionsTime mockSuggestionsTime;
+  late MockITaskManagement mockTaskManagement;
+  late MockISuggestionsTime mockSuggestionsTime;
 
   setUp(() {
-    mockTaskManagement = MockTaskManagement();
-    mockSuggestionsTime = MockSuggestionsTime();
+    mockTaskManagement = MockITaskManagement();
+    mockSuggestionsTime = MockISuggestionsTime();
     controller = TaskController(mockTaskManagement, mockSuggestionsTime);
   });
 
-  group('TaskController', () {
-    test(
-      'loadTasks deve atualizar o estado para sucesso e popular as tarefas em caso de sucesso',
-      () async {
-        final tasks = [
-          Task(
-            id: '1',
-            title: 'Tarefa de Teste 1',
-            priority: TaskPriority.medium,
-            category: 'Trabalho',
-            estimatedDuration: 60,
-            deadline: DateTime.now(),
-          ),
-        ];
-        when(mockTaskManagement.getTasks()).thenAnswer((_) async => tasks);
+  group('Testes do TaskController', () {
+    test('loadTasks atualiza estado para sucesso e popula tarefas', () async {
+      final tasks = [
+        Task(
+          id: '1',
+          title: 'Test Task 1',
+          priority: TaskPriority.medium,
+          category: 'Work',
+          estimatedDuration: 60,
+          deadline: DateTime.now(),
+        ),
+      ];
+      when(
+        mockTaskManagement.getTasks(),
+      ).thenAnswer((_) => Future.value(tasks));
 
-        await controller.loadTasks();
+      await controller.loadTasks();
 
-        expect(controller.state, TaskControllerState.success);
-        expect(controller.tasks, tasks);
-        verify(mockTaskManagement.getTasks()).called(1);
-      },
-    );
+      expect(controller.state, TaskControllerState.success);
+      expect(controller.tasks, tasks);
+      verify(mockTaskManagement.getTasks()).called(1);
+      verifyNoMoreInteractions(mockTaskManagement);
+    });
 
-    test(
-      'loadTasks deve atualizar o estado para erro em caso de falha',
-      () async {
-        when(
-          mockTaskManagement.getTasks(),
-        ).thenThrow(Exception('Falha ao carregar tarefas'));
+    test('loadTasks atualiza estado para erro em caso de falha', () async {
+      when(
+        mockTaskManagement.getTasks(),
+      ).thenAnswer((_) => Future.error(Exception('Falha ao carregar tarefas')));
 
-        await controller.loadTasks();
+      await controller.loadTasks();
 
-        expect(controller.state, TaskControllerState.error);
-        expect(controller.errorMessage, contains('Falha ao carregar tarefas'));
-        expect(controller.tasks, isEmpty);
-        verify(mockTaskManagement.getTasks()).called(1);
-      },
-    );
+      expect(controller.state, TaskControllerState.error);
+      expect(controller.errorMessage, contains('Falha ao carregar tarefas'));
+      expect(controller.tasks, isEmpty);
+      verify(mockTaskManagement.getTasks()).called(1);
+      verifyNoMoreInteractions(mockTaskManagement);
+    });
 
-    test('loadSuggestions deve popular sugestões em caso de sucesso', () async {
+    test('loadSuggestions popula sugestões em caso de sucesso', () async {
       final suggestions = [
         TaskSuggestion(id: 's1', taskId: 't1', suggestedTimes: []),
       ];
       when(
         mockSuggestionsTime.getSuggestions(),
-      ).thenAnswer((_) async => suggestions);
+      ).thenAnswer((_) => Future.value(suggestions));
 
       await controller.loadSuggestions();
 
       expect(controller.suggestions, suggestions);
       verify(mockSuggestionsTime.getSuggestions()).called(1);
+      verifyNoMoreInteractions(mockSuggestionsTime);
     });
 
-    test(
-      'loadSuggestions não deve modificar sugestões em caso de falha',
-      () async {
-        when(
-          mockSuggestionsTime.getSuggestions(),
-        ).thenThrow(Exception('Falha ao carregar sugestões'));
+    test('loadSuggestions não modifica sugestões em caso de falha', () async {
+      when(mockSuggestionsTime.getSuggestions()).thenAnswer(
+        (_) => Future.error(Exception('Falha ao carregar sugestões')),
+      );
 
-        await controller.loadSuggestions();
+      await controller.loadSuggestions();
 
-        expect(
-          controller.suggestions,
-          isEmpty,
-        ); // Deve permanecer vazio se inicial
-        verify(mockSuggestionsTime.getSuggestions()).called(1);
-      },
-    );
+      expect(controller.suggestions, isEmpty);
+      verify(mockSuggestionsTime.getSuggestions()).called(1);
+      verifyNoMoreInteractions(mockSuggestionsTime);
+    });
 
-    test('setSearchQuery deve filtrar tarefas pelo título', () async {
+    test('setSearchQuery filtra tarefas pelo título', () async {
       final task1 = Task(
         id: '1',
-        title: 'Comprar mantimentos',
+        title: 'Buy groceries',
         priority: TaskPriority.medium,
-        category: 'Pessoal',
+        category: 'Personal',
         estimatedDuration: 60,
         deadline: DateTime.now(),
       );
       final task2 = Task(
         id: '2',
-        title: 'Preparar apresentação',
+        title: 'Prepare presentation',
         priority: TaskPriority.high,
-        category: 'Trabalho',
+        category: 'Work',
         estimatedDuration: 120,
         deadline: DateTime.now(),
       );
       controller.allTasks.addAll([task1, task2]);
 
-      controller.setSearchQuery('mantimentos');
+      controller.setSearchQuery('groceries');
       expect(controller.tasks.length, 1);
-      expect(controller.tasks.first.title, 'Comprar mantimentos');
+      expect(controller.tasks.first.title, 'Buy groceries');
 
-      controller.setSearchQuery('apresentação');
+      controller.setSearchQuery('presentation');
       expect(controller.tasks.length, 1);
-      expect(controller.tasks.first.title, 'Preparar apresentação');
+      expect(controller.tasks.first.title, 'Prepare presentation');
 
-      controller.setSearchQuery('inexistente');
+      controller.setSearchQuery('nonexistent');
       expect(controller.tasks, isEmpty);
     });
 
-    test('setStatusFilter deve filtrar tarefas pelo status', () async {
+    test('setStatusFilter filtra tarefas pelo status', () async {
       final task1 = Task(
         id: '1',
-        title: 'Tarefa A',
+        title: 'Task A',
         priority: TaskPriority.medium,
-        category: 'Trabalho',
+        category: 'Work',
         estimatedDuration: 60,
         deadline: DateTime.now(),
         status: TaskStatus.pending,
       );
       final task2 = Task(
         id: '2',
-        title: 'Tarefa B',
+        title: 'Task B',
         priority: TaskPriority.high,
-        category: 'Pessoal',
+        category: 'Personal',
         estimatedDuration: 120,
         deadline: DateTime.now(),
         status: TaskStatus.completed,
@@ -158,39 +151,36 @@ void main() {
       expect(controller.tasks, isEmpty);
     });
 
-    test('clearFilters deve remover todos os filtros', () async {
+    test('clearFilters remove todos os filtros', () async {
       final task1 = Task(
         id: '1',
-        title: 'Tarefa A',
+        title: 'Task A',
         priority: TaskPriority.high,
-        category: 'Trabalho',
+        category: 'Work',
         estimatedDuration: 60,
         deadline: DateTime.now(),
         status: TaskStatus.pending,
       );
       final task2 = Task(
         id: '2',
-        title: 'Tarefa B',
+        title: 'Task B',
         priority: TaskPriority.low,
-        category: 'Pessoal',
+        category: 'Personal',
         estimatedDuration: 120,
         deadline: DateTime.now(),
         status: TaskStatus.completed,
       );
       controller.allTasks.addAll([task1, task2]);
 
-      controller.setSearchQuery('Tarefa');
+      controller.setSearchQuery('Task');
       controller.setStatusFilter(TaskStatus.pending);
       controller.setPriorityFilter(TaskPriority.high);
-      controller.setCategoryFilter('Trabalho');
+      controller.setCategoryFilter('Work');
 
       expect(controller.tasks.length, 1);
 
       controller.clearFilters();
-      expect(
-        controller.tasks.length,
-        2,
-      ); // Ambas as tarefas devem estar visíveis
+      expect(controller.tasks.length, 2);
       expect(controller.searchQuery, '');
       expect(controller.statusFilter, isNull);
       expect(controller.priorityFilter, isNull);
@@ -198,19 +188,21 @@ void main() {
     });
 
     test(
-      'weeklyProductivity deve calcular corretamente as tarefas concluídas por dia da semana',
+      'weeklyProductivity calcula tarefas concluídas por dia corretamente',
       () {
         final now = DateTime.now();
-        final monday = DateTime(now.year, now.month, now.day).subtract(
-          Duration(days: now.weekday - 1),
-        ); // Segunda-feira da semana atual às 00:00:00
+        final monday = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(days: now.weekday - 1));
 
         controller.allTasks.addAll([
           Task(
             id: '1',
-            title: 'Tarefa Seg 1',
+            title: 'Task Mon 1',
             priority: TaskPriority.low,
-            category: 'Trabalho',
+            category: 'Work',
             estimatedDuration: 30,
             deadline: monday.add(Duration(hours: 1)),
             status: TaskStatus.completed,
@@ -218,19 +210,19 @@ void main() {
           ),
           Task(
             id: '2',
-            title: 'Tarefa Ter 1',
+            title: 'Task Tue 1',
             priority: TaskPriority.medium,
-            category: 'Pessoal',
+            category: 'Personal',
             estimatedDuration: 60,
-            deadline: monday.add(Duration(days: 1, hours: 1)), // Terça-feira
+            deadline: monday.add(Duration(days: 1, hours: 1)),
             status: TaskStatus.completed,
             completedAt: monday.add(Duration(days: 1, hours: 2)),
           ),
           Task(
             id: '3',
-            title: 'Tarefa Seg 2',
+            title: 'Task Mon 2',
             priority: TaskPriority.high,
-            category: 'Trabalho',
+            category: 'Work',
             estimatedDuration: 90,
             deadline: monday.add(Duration(hours: 3)),
             status: TaskStatus.completed,
@@ -238,18 +230,18 @@ void main() {
           ),
           Task(
             id: '4',
-            title: 'Tarefa Não Concluída',
+            title: 'Task Not Completed',
             priority: TaskPriority.medium,
-            category: 'Trabalho',
+            category: 'Work',
             estimatedDuration: 60,
             deadline: now.add(Duration(days: 1)),
             status: TaskStatus.pending,
           ),
           Task(
             id: '5',
-            title: 'Tarefa Semana Passada',
+            title: 'Task Last Week',
             priority: TaskPriority.low,
-            category: 'Pessoal',
+            category: 'Personal',
             estimatedDuration: 30,
             deadline: monday
                 .subtract(Duration(days: 7))
@@ -273,31 +265,31 @@ void main() {
       },
     );
 
-    test('completionRate deve retornar a porcentagem correta', () {
+    test('completionRate retorna porcentagem correta', () {
       controller.allTasks.addAll([
         Task(
           id: '1',
-          title: 'Tarefa 1',
+          title: 'Task 1',
           priority: TaskPriority.medium,
-          category: 'Trabalho',
+          category: 'Work',
           estimatedDuration: 60,
           deadline: DateTime.now(),
           status: TaskStatus.completed,
         ),
         Task(
           id: '2',
-          title: 'Tarefa 2',
+          title: 'Task 2',
           priority: TaskPriority.medium,
-          category: 'Trabalho',
+          category: 'Work',
           estimatedDuration: 60,
           deadline: DateTime.now(),
           status: TaskStatus.pending,
         ),
         Task(
           id: '3',
-          title: 'Tarefa 3',
+          title: 'Task 3',
           priority: TaskPriority.medium,
-          category: 'Trabalho',
+          category: 'Work',
           estimatedDuration: 60,
           deadline: DateTime.now(),
           status: TaskStatus.cancelled,
@@ -310,81 +302,133 @@ void main() {
       expect(controller.completionRate, 0.0);
     });
 
-    test(
-      'overdueTasks deve retornar tarefas com prazo no passado e não concluídas',
-      () {
-        final now = DateTime.now();
-        controller.allTasks.addAll([
-          Task(
-            id: '1',
-            title: 'Tarefa Atrasada 1',
-            priority: TaskPriority.high,
-            category: 'Trabalho',
-            estimatedDuration: 60,
-            deadline: now.subtract(Duration(days: 1)),
-            status: TaskStatus.pending,
-          ),
-          Task(
-            id: '2',
-            title: 'Tarefa Atrasada 2 (em progresso)',
-            priority: TaskPriority.medium,
-            category: 'Pessoal',
-            estimatedDuration: 30,
-            deadline: now.subtract(Duration(hours: 1)),
-            status: TaskStatus.inProgress,
-          ),
-          Task(
-            id: '3',
-            title: 'Tarefa Concluída',
-            priority: TaskPriority.low,
-            category: 'Trabalho',
-            estimatedDuration: 90,
-            deadline: now.subtract(Duration(days: 2)),
-            status: TaskStatus.completed,
-          ),
-          Task(
-            id: '4',
-            title: 'Tarefa Futura',
-            priority: TaskPriority.high,
-            category: 'Pessoal',
-            estimatedDuration: 45,
-            deadline: now.add(Duration(days: 1)),
-            status: TaskStatus.pending,
-          ),
-          Task(
-            id: '5',
-            title: 'Tarefa Cancelada',
-            priority: TaskPriority.high,
-            category: 'Pessoal',
-            estimatedDuration: 45,
-            deadline: now.subtract(Duration(days: 1)),
-            status: TaskStatus.cancelled,
-          ),
-        ]);
+    test('overdueTasks retorna tarefas não concluídas após o prazo', () {
+      final now = DateTime.now();
+      controller.allTasks.addAll([
+        Task(
+          id: '1',
+          title: 'Overdue Task 1',
+          priority: TaskPriority.high,
+          category: 'Work',
+          estimatedDuration: 60,
+          deadline: now.subtract(Duration(days: 1)),
+          status: TaskStatus.pending,
+        ),
+        Task(
+          id: '2',
+          title: 'Overdue Task 2 (In Progress)',
+          priority: TaskPriority.medium,
+          category: 'Personal',
+          estimatedDuration: 30,
+          deadline: now.subtract(Duration(hours: 1)),
+          status: TaskStatus.inProgress,
+        ),
+        Task(
+          id: '3',
+          title: 'Completed Task',
+          priority: TaskPriority.low,
+          category: 'Work',
+          estimatedDuration: 90,
+          deadline: now.subtract(Duration(days: 2)),
+          status: TaskStatus.completed,
+        ),
+        Task(
+          id: '4',
+          title: 'Future Task',
+          priority: TaskPriority.high,
+          category: 'Personal',
+          estimatedDuration: 45,
+          deadline: now.add(Duration(days: 1)),
+          status: TaskStatus.pending,
+        ),
+        Task(
+          id: '5',
+          title: 'Cancelled Task',
+          priority: TaskPriority.high,
+          category: 'Personal',
+          estimatedDuration: 45,
+          deadline: now.subtract(Duration(days: 1)),
+          status: TaskStatus.cancelled,
+        ),
+      ]);
 
-        final overdue = controller.overdueTasks;
-        expect(overdue.length, 2);
-        expect(overdue.any((task) => task.id == '1'), isTrue);
-        expect(overdue.any((task) => task.id == '2'), isTrue);
-        expect(overdue.any((task) => task.id == '3'), isFalse);
-        expect(overdue.any((task) => task.id == '4'), isFalse);
-        expect(overdue.any((task) => task.id == '5'), isFalse);
+      final overdue = controller.overdueTasks;
+      expect(overdue.length, 3);
+      expect(overdue.any((task) => task.id == '1'), isTrue);
+      expect(overdue.any((task) => task.id == '2'), isTrue);
+      expect(overdue.any((task) => task.id == '3'), isFalse);
+      expect(overdue.any((task) => task.id == '4'), isFalse);
+      expect(overdue.any((task) => task.id == '5'), isTrue);
+    });
+
+    test(
+      'updateUserPreferences atualiza preferências do usuário corretamente',
+      () {
+        final newPreferences = UserPreferences(
+          workingHours: WorkingHours(start: '10:00', end: '19:00'),
+          preferredCategories: ['study', 'hobby'],
+        );
+
+        controller.updateUserPreferences(newPreferences);
+
+        expect(controller.userPreferences.workingHours.start, '10:00');
+        expect(controller.userPreferences.workingHours.end, '19:00');
+        expect(controller.userPreferences.preferredCategories, [
+          'study',
+          'hobby',
+        ]);
       },
     );
 
-    test('updateUserPreferences deve atualizar as preferências do usuário', () {
-      final newPreferences = UserPreferences(
-        workingHours: WorkingHours(start: '10:00', end: '19:00'),
-        preferredCategories: ['estudo', 'hobby'],
+    test(
+      'createTask adiciona tarefa e atualiza estado em caso de sucesso',
+      () async {
+        final task = Task(
+          id: null,
+          title: 'New Task',
+          priority: TaskPriority.medium,
+          category: 'Work',
+          estimatedDuration: 60,
+          deadline: DateTime.now(),
+        );
+        final taskWithId = task.copyWith(id: '1');
+        when(
+          mockTaskManagement.createTask(any),
+        ).thenAnswer((_) => Future.value(taskWithId));
+
+        await controller.createTask(task);
+
+        expect(controller.state, TaskControllerState.success);
+        expect(controller.tasks.length, 1);
+        expect(controller.tasks.first.title, 'New Task');
+        expect(controller.tasks.first.id, isNotNull);
+        verify(mockTaskManagement.createTask(any)).called(1);
+        verifyNoMoreInteractions(mockTaskManagement);
+      },
+    );
+
+    test('updateTask atualiza tarefa e estado em caso de sucesso', () async {
+      final task = Task(
+        id: '1',
+        title: 'Task 1',
+        priority: TaskPriority.medium,
+        category: 'Work',
+        estimatedDuration: 60,
+        deadline: DateTime.now(),
       );
+      controller.allTasks.add(task);
+      final updatedTask = task.copyWith(title: 'Updated Task');
 
-      controller.updateUserPreferences(newPreferences);
+      when(
+        mockTaskManagement.updateTask(any),
+      ).thenAnswer((_) => Future.value(updatedTask));
 
-      expect(controller.userPreferences.workingHours.start, '10:00');
-      expect(controller.userPreferences.preferredCategories, [
-        'estudo',
-        'hobby',
-      ]);
+      await controller.updateTask(updatedTask);
+
+      expect(controller.state, TaskControllerState.success);
+      expect(controller.tasks.first.title, 'Updated Task');
+      verify(mockTaskManagement.updateTask(any)).called(1);
+      verifyNoMoreInteractions(mockTaskManagement);
     });
   });
 }
